@@ -1,0 +1,26 @@
+{
+  "name": "babel-plugin-vidom-jsx",
+  "version": "0.0.1",
+  "keywords": [
+    "vidom",
+    "jsx",
+    "babel",
+    "plugin"
+  ],
+  "main": "lib/index.js",
+  "author": "Dmitry Filatov <dfilatov@yandex-team.ru>",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/dfilatov/babel-plugin-vidom-jsx.git"
+  },
+  "dependencies": {
+    "babel-core": "^5.0.0"
+  },
+  "devDependencies": {
+    "babel": "5.8.21"
+  },
+  "license": "MIT",
+  "scripts": {
+    "build-lib": "rm -rf lib && mkdir -p lib && babel src --out-dir lib"
+  }
+}
