@@ -76,11 +76,60 @@ export default function({ Plugin, types }) {
     }
 
     function normalizeChildren(children) {
-        return children.map(child => {
-            return types.isLiteral(child)?
-                buildChildrenExpr([child], buildNodeExpr(types.literal('span'))) :
-                child;
+        return children.reduce((acc, child) => {
+            if(types.isLiteral(child)) {
+                if(typeof child.value === 'string') {
+                    child = cleanJSXLiteral(child);
+                }
+                child && acc.push(buildChildrenExpr([child], buildNodeExpr(types.literal('span'))));
+            }
+            else {
+                acc.push(child);
+            }
+
+            return acc;
+        }, []);
+    }
+
+    function cleanJSXLiteral(node) {
+        const lines = node.value.split(/\r\n|\n|\r/);
+        let lastNonEmptyLine = 0;
+
+        lines.forEach((line, i) => {
+            if(line.match(/[^ \t]/)) {
+                lastNonEmptyLine = i;
+            }
         });
+
+        let str = '';
+
+        lines.forEach((line, i) => {
+            const isFirstLine = i === 0,
+                isLastLine = i === lines.length - 1,
+                isLastNonEmptyLine = i === lastNonEmptyLine;
+
+            let trimmedLine = line.replace(/\t/g, ' ');
+
+            if(!isFirstLine) {
+                trimmedLine = trimmedLine.replace(/^[ ]+/, '');
+            }
+
+            if(!isLastLine) {
+                trimmedLine = trimmedLine.replace(/[ ]+$/, '');
+            }
+
+            if(trimmedLine) {
+                if(!isLastNonEmptyLine) {
+                    trimmedLine += ' ';
+                }
+
+                str += trimmedLine;
+            }
+        });
+
+        if(str) {
+            return types.literal(str);
+        }
     }
 
     let hasJSXExpr;
