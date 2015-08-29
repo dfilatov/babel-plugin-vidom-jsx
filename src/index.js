@@ -1,4 +1,5 @@
-const NODE_BUILDER = '__vidomjsx__';
+const NODE_BUILDER = '__node__',
+    CHILDREN_NORMALIZER = '__normalizer__';
 
 export default function({ Plugin, types }) {
     function buildNodeExpr(tagExpr) {
@@ -10,9 +11,7 @@ export default function({ Plugin, types }) {
             prevExpr,
             types.callExpression(
                 types.identifier('children'),
-                children.length > 1?
-                    [types.arrayExpression(normalizeChildren(children))] :
-                    children));
+                [normalizeChildren(children)]));
     }
 
     function buildAttrsExpr(attrs, prevExpr, file) {
@@ -76,19 +75,33 @@ export default function({ Plugin, types }) {
     }
 
     function normalizeChildren(children) {
-        return children.reduce((acc, child) => {
-            if(types.isLiteral(child)) {
-                if(typeof child.value === 'string') {
-                    child = cleanJSXLiteral(child);
+        let normalizeInRuntime = false,
+            res = children.reduce((acc, child) => {
+                if(types.isLiteral(child)) {
+                    if(typeof child.value === 'string') {
+                        child = cleanJSXLiteral(child);
+                    }
+                    child && acc.push(buildChildrenExpr([child], buildNodeExpr(types.literal('span'))));
                 }
-                child && acc.push(buildChildrenExpr([child], buildNodeExpr(types.literal('span'))));
-            }
-            else {
-                acc.push(child);
-            }
+                else if(types.isJSXExpressionContainer(child)) {
+                    if(!types.isJSXEmptyExpression(child.expression)) {
+                        normalizeInRuntime = true;
+                        needNormalizer = true;
+                        acc.push(child);
+                    }
+                }
+                else {
+                    acc.push(child);
+                }
 
-            return acc;
-        }, []);
+                return acc;
+            }, []);
+
+        return normalizeInRuntime?
+            types.callExpression(
+                types.identifier(CHILDREN_NORMALIZER),
+                [res.length > 1? types.arrayExpression(res) : res[0]]) :
+            types.arrayExpression(res);
     }
 
     function cleanJSXLiteral(node) {
@@ -132,7 +145,7 @@ export default function({ Plugin, types }) {
         }
     }
 
-    let hasJSXExpr;
+    let hasJSXExpr, needNormalizer;
 
     return new Plugin('babel-vidom-jsx', {
         visitor : {
@@ -161,6 +174,7 @@ export default function({ Plugin, types }) {
             Program : {
                 enter : function() {
                     hasJSXExpr = false;
+                    needNormalizer = false;
                 },
 
                 exit : function(node) {
@@ -177,7 +191,14 @@ export default function({ Plugin, types }) {
                                     types.memberExpression(
                                         types.callExpression(types.identifier('require'), [types.literal('vidom')]),
                                         types.identifier('node')))
-                            ]));
+                            ].concat(needNormalizer?
+                                types.variableDeclarator(
+                                    types.identifier(CHILDREN_NORMALIZER),
+                                    types.memberExpression(
+                                        types.callExpression(types.identifier('require'), [types.literal('vidom')]),
+                                        types.identifier('normalizeChildren'))) :
+                                []
+                            )));
                 }
             }
         }
