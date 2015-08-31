@@ -145,12 +145,12 @@ export default function({ Plugin, types }) {
         }
     }
 
-    let hasJSXExpr, needNormalizer;
+    let requireNode, requireNormalizer;
 
     return new Plugin('babel-vidom-jsx', {
         visitor : {
             JSXElement : function(node, parent, scope, file) {
-                hasJSXExpr = true;
+                requireNode = true;
 
                 const name = node.openingElement.name.name,
                     attrs = node.openingElement.attributes,
@@ -173,12 +173,12 @@ export default function({ Plugin, types }) {
 
             Program : {
                 enter : function() {
-                    hasJSXExpr = false;
-                    needNormalizer = false;
+                    requireNode = false;
+                    requireNormalizer = false;
                 },
 
                 exit : function(node) {
-                    if(!hasJSXExpr) {
+                    if(!requireNode) {
                         return;
                     }
 
@@ -191,7 +191,7 @@ export default function({ Plugin, types }) {
                                     types.memberExpression(
                                         types.callExpression(types.identifier('require'), [types.literal('vidom')]),
                                         types.identifier('node')))
-                            ].concat(needNormalizer?
+                            ].concat(requireNormalizer?
                                 types.variableDeclarator(
                                     types.identifier(CHILDREN_NORMALIZER),
                                     types.memberExpression(
