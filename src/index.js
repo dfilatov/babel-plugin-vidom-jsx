@@ -81,12 +81,25 @@ export default function({ Plugin, types }) {
                     if(typeof child.value === 'string') {
                         child = cleanJSXLiteral(child);
                     }
-                    child && acc.push(buildChildrenExpr([child], buildNodeExpr(types.literal('span'))));
+
+                    if(child) {
+                        if(children.length > 1) {
+                            acc.push(
+                                types.memberExpression(
+                                    buildNodeExpr(types.literal('span')),
+                                    types.callExpression(
+                                        types.identifier('children'),
+                                        [child])));
+                        }
+                        else {
+                            acc.push(child);
+                        }
+                    }
                 }
                 else if(types.isJSXExpressionContainer(child)) {
                     if(!types.isJSXEmptyExpression(child.expression)) {
                         normalizeInRuntime = true;
-                        needNormalizer = true;
+                        requireNormalizer = true;
                         acc.push(child);
                     }
                 }
@@ -101,7 +114,9 @@ export default function({ Plugin, types }) {
             types.callExpression(
                 types.identifier(CHILDREN_NORMALIZER),
                 [res.length > 1? types.arrayExpression(res) : res[0]]) :
-            types.arrayExpression(res);
+            res.length > 1?
+                types.arrayExpression(res) :
+                res[0];
     }
 
     function cleanJSXLiteral(node) {
