@@ -20,6 +20,7 @@ export default function({ Plugin, types }) {
             objList = [],
             attrsExpr,
             keyExpr,
+            domRefExpr,
             pushAttrs = function() {
                 if(!attrList.length) {
                     return;
@@ -35,11 +36,17 @@ export default function({ Plugin, types }) {
                 objList.push(attr.argument);
             }
             else {
-                if(attr.name.name === 'key') {
-                    keyExpr = attr.value;
-                }
-                else {
-                    attrList.push(attr);
+                switch(attr.name.name) {
+                    case 'key':
+                        keyExpr = attr.value;
+                    break;
+
+                    case 'dom-ref':
+                        domRefExpr = attr.value;
+                    break;
+
+                    default:
+                        attrList.push(attr);
                 }
             }
         });
@@ -69,6 +76,12 @@ export default function({ Plugin, types }) {
             res = types.memberExpression(
                 res,
                 types.callExpression(types.identifier('key'), [keyExpr]));
+        }
+
+        if(domRefExpr) {
+            res = types.memberExpression(
+                types.identifier('this'),
+                types.callExpression(types.identifier('setDomRef'), [domRefExpr, res]));
         }
 
         return res;
