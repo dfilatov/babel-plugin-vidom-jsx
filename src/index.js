@@ -19,6 +19,7 @@ export default function({ Plugin, types }) {
             attrList = [],
             objList = [],
             attrsExpr,
+            nsExpr,
             keyExpr,
             domRefExpr,
             pushAttrs = function() {
@@ -37,6 +38,10 @@ export default function({ Plugin, types }) {
             }
             else {
                 switch(attr.name.name) {
+                    case 'xmlns':
+                        nsExpr = attr.value;
+                    break;
+
                     case 'key':
                         keyExpr = attr.value;
                     break;
@@ -72,16 +77,22 @@ export default function({ Plugin, types }) {
                 types.callExpression(types.identifier('attrs'), [attrsExpr]));
         }
 
+        if(domRefExpr) {
+            res = types.memberExpression(
+                types.identifier('this'),
+                types.callExpression(types.identifier('setDomRef'), [domRefExpr, res]));
+        }
+
         if(keyExpr) {
             res = types.memberExpression(
                 res,
                 types.callExpression(types.identifier('key'), [keyExpr]));
         }
 
-        if(domRefExpr) {
+        if(nsExpr) {
             res = types.memberExpression(
-                types.identifier('this'),
-                types.callExpression(types.identifier('setDomRef'), [domRefExpr, res]));
+                res,
+                types.callExpression(types.identifier('ns'), [nsExpr]));
         }
 
         return res;
