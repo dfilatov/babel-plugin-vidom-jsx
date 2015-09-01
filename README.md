@@ -1,5 +1,5 @@
 # babel-plugin-vidom-jsx
-Plugin for babel to enable JSX for Vidom.
+Plugin for babel to enable JSX in [Vidom](https://github.com/dfilatov/vidom).
 
 ## Installation
 ```
