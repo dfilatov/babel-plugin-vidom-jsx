@@ -21,6 +21,7 @@ export default function({ Plugin, types }) {
             attrsExpr,
             nsExpr,
             keyExpr,
+            htmlExpr,
             domRefExpr,
             pushAttrs = function() {
                 if(!attrList.length) {
@@ -44,6 +45,10 @@ export default function({ Plugin, types }) {
 
                     case 'key':
                         keyExpr = attr.value;
+                    break;
+
+                    case 'html':
+                        htmlExpr = attr.value;
                     break;
 
                     case 'dom-ref':
@@ -71,16 +76,16 @@ export default function({ Plugin, types }) {
             }
         }
 
-        if(attrsExpr) {
-            res = types.memberExpression(
-                res,
-                types.callExpression(types.identifier('attrs'), [attrsExpr]));
-        }
-
         if(domRefExpr) {
             res = types.memberExpression(
                 types.identifier('this'),
                 types.callExpression(types.identifier('setDomRef'), [domRefExpr, res]));
+        }
+
+        if(nsExpr) {
+            res = types.memberExpression(
+                res,
+                types.callExpression(types.identifier('ns'), [nsExpr]));
         }
 
         if(keyExpr) {
@@ -89,10 +94,16 @@ export default function({ Plugin, types }) {
                 types.callExpression(types.identifier('key'), [keyExpr]));
         }
 
-        if(nsExpr) {
+        if(attrsExpr) {
             res = types.memberExpression(
                 res,
-                types.callExpression(types.identifier('ns'), [nsExpr]));
+                types.callExpression(types.identifier('attrs'), [attrsExpr]));
+        }
+
+        if(htmlExpr) {
+            res = types.memberExpression(
+                res,
+                types.callExpression(types.identifier('html'), [htmlExpr]));
         }
 
         return res;
