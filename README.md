@@ -8,6 +8,6 @@ npm i --save-dev babel-plugin-vidom-jsx
 
 ## Usage
 ```
-babel --plugins babel-plugin-vidom-jsx file.js
+babel --plugins vidom-jsx file.js
 ```
 
