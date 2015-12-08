@@ -1,17 +1,19 @@
-const NODE_BUILDER = '__node__',
-    CHILDREN_NORMALIZER = '__normalizer__';
+import syntaxJSXPlugin from 'babel-plugin-syntax-jsx';
 
-export default function({ Plugin, types }) {
+const NODE_BUILDER = '__vnode__',
+    CHILDREN_NORMALIZER = '__vnormalizer__';
+
+export default function({ types }) {
     function buildNodeExpr(tagExpr) {
         return types.callExpression(types.identifier(NODE_BUILDER), [tagExpr]);
     }
 
     function buildChildrenExpr(children, prevExpr) {
-        return types.memberExpression(
-            prevExpr,
-            types.callExpression(
-                types.identifier('children'),
-                [normalizeChildren(children)]));
+        return types.callExpression(
+            types.memberExpression(
+                prevExpr,
+                types.identifier('children')),
+            [normalizeChildren(children)]);
     }
 
     function buildAttrsExpr(attrs, prevExpr, file) {
@@ -23,7 +25,7 @@ export default function({ Plugin, types }) {
             keyExpr,
             htmlExpr,
             domRefExpr,
-            pushAttrs = function() {
+            pushAttrs = () => {
                 if(!attrList.length) {
                     return;
                 }
@@ -40,23 +42,28 @@ export default function({ Plugin, types }) {
             else {
                 switch(attr.name.name) {
                     case 'xmlns':
-                        nsExpr = attr.value;
+                        nsExpr = getValueExpr(attr.value);
                     break;
 
                     case 'key':
-                        keyExpr = attr.value;
+                        keyExpr = getValueExpr(attr.value);
                     break;
 
                     case 'html':
-                        htmlExpr = attr.value;
+                        htmlExpr = getValueExpr(attr.value);
                     break;
 
                     case 'dom-ref':
-                        domRefExpr = attr.value;
+                        domRefExpr = getValueExpr(attr.value);
                     break;
 
                     default:
-                        attrList.push(attr);
+                        attrList.push(
+                            types.objectProperty(
+                                types.stringLiteral(attr.name.name),
+                                types.isJSXExpressionContainer(attr.value)?
+                                    attr.value.expression :
+                                    attr.value || types.booleanLiteral(true)));
                 }
             }
         });
@@ -77,54 +84,64 @@ export default function({ Plugin, types }) {
         }
 
         if(domRefExpr) {
-            res = types.memberExpression(
-                types.identifier('this'),
-                types.callExpression(types.identifier('setDomRef'), [domRefExpr, res]));
+            res = types.callExpression(
+                types.memberExpression(
+                    types.identifier('this'),
+                    types.identifier('setDomRef')),
+                [domRefExpr, res]);
         }
 
         if(nsExpr) {
-            res = types.memberExpression(
-                res,
-                types.callExpression(types.identifier('ns'), [nsExpr]));
+            res = types.callExpression(
+                types.memberExpression(
+                    res,
+                    types.identifier('ns')),
+                [nsExpr]);
         }
 
         if(keyExpr) {
-            res = types.memberExpression(
-                res,
-                types.callExpression(types.identifier('key'), [keyExpr]));
+            res = types.callExpression(
+                types.memberExpression(
+                    res,
+                    types.identifier('key')),
+                [keyExpr]);
         }
 
         if(attrsExpr) {
-            res = types.memberExpression(
-                res,
-                types.callExpression(types.identifier('attrs'), [attrsExpr]));
+            res = types.callExpression(
+                types.memberExpression(res, types.identifier('attrs')),
+                [attrsExpr]);
         }
 
         if(htmlExpr) {
-            res = types.memberExpression(
-                res,
-                types.callExpression(types.identifier('html'), [htmlExpr]));
+            res = types.callExpression(
+                types.memberExpression(
+                    res,
+                    types.identifier('html')),
+                [htmlExpr]);
         }
 
         return res;
     }
 
+    function getValueExpr(value) {
+        return types.isJSXExpressionContainer(value)? value.expression : value;
+    }
+
     function normalizeChildren(children) {
         let normalizeInRuntime = false,
             res = children.reduce((acc, child) => {
-                if(types.isLiteral(child)) {
-                    if(typeof child.value === 'string') {
-                        child = cleanJSXLiteral(child);
-                    }
+                if(types.isJSXText(child)) {
+                    child = cleanJSXText(child);
 
                     if(child) {
                         if(children.length > 1) {
                             acc.push(
-                                types.memberExpression(
-                                    buildNodeExpr(types.literal('span')),
-                                    types.callExpression(
-                                        types.identifier('children'),
-                                        [child])));
+                                types.callExpression(
+                                    types.memberExpression(
+                                        buildNodeExpr(types.stringLiteral('span')),
+                                        types.identifier('children')),
+                                        [child]));
                         }
                         else {
                             acc.push(child);
@@ -135,7 +152,7 @@ export default function({ Plugin, types }) {
                     if(!types.isJSXEmptyExpression(child.expression)) {
                         normalizeInRuntime = true;
                         requireNormalizer = true;
-                        acc.push(child);
+                        acc.push(child.expression);
                     }
                 }
                 else {
@@ -154,7 +171,7 @@ export default function({ Plugin, types }) {
                 res[0];
     }
 
-    function cleanJSXLiteral(node) {
+    function cleanJSXText(node) {
         const lines = node.value.split(/\r\n|\n|\r/);
         let lastNonEmptyLine = 0;
 
@@ -191,23 +208,25 @@ export default function({ Plugin, types }) {
         });
 
         if(str) {
-            return types.literal(str);
+            return types.stringLiteral(str);
         }
     }
 
     let requireNode, requireNormalizer;
 
-    return new Plugin('babel-vidom-jsx', {
+    return {
+        inherits : syntaxJSXPlugin,
         visitor : {
-            JSXElement : function(node, parent, scope, file) {
+            JSXElement : function(path, file) {
                 requireNode = true;
 
-                const name = node.openingElement.name.name,
+                const node = path.node,
+                    name = node.openingElement.name.name,
                     attrs = node.openingElement.attributes,
                     children = node.children;
 
                 let res = buildNodeExpr(name === name.toLowerCase()?
-                        types.literal(name) :
+                        types.stringLiteral(name) :
                         node.openingElement.name);
 
                 if(attrs.length) {
@@ -218,7 +237,7 @@ export default function({ Plugin, types }) {
                     res = buildChildrenExpr(children, res);
                 }
 
-                return res;
+                path.replaceWith(res);
             },
 
             Program : {
@@ -227,30 +246,30 @@ export default function({ Plugin, types }) {
                     requireNormalizer = false;
                 },
 
-                exit : function(node) {
+                exit : function(path) {
                     if(!requireNode) {
                         return;
                     }
 
-                    node.body.unshift(
+                    path.node.body.unshift(
                         types.variableDeclaration(
                             'var',
                             [
                                 types.variableDeclarator(
                                     types.identifier(NODE_BUILDER),
                                     types.memberExpression(
-                                        types.callExpression(types.identifier('require'), [types.literal('vidom')]),
+                                        types.callExpression(types.identifier('require'), [types.stringLiteral('vidom')]),
                                         types.identifier('node')))
                             ].concat(requireNormalizer?
                                 types.variableDeclarator(
                                     types.identifier(CHILDREN_NORMALIZER),
                                     types.memberExpression(
-                                        types.callExpression(types.identifier('require'), [types.literal('vidom')]),
+                                        types.callExpression(types.identifier('require'), [types.stringLiteral('vidom')]),
                                         types.identifier('normalizeChildren'))) :
                                 []
                             )));
                 }
             }
         }
-    });
+    };
 }
