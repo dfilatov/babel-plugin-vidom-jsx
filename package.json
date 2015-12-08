@@ -1,6 +1,6 @@
 {
   "name": "babel-plugin-vidom-jsx",
-  "version": "0.0.8",
+  "version": "0.1.0",
   "keywords": [
     "vidom",
     "jsx",
