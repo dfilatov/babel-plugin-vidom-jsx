@@ -9,13 +9,13 @@ export default function({ types }) {
     }
 
     function buildChildrenExpr(children, prevExpr) {
-        var normalizedChildren = normalizeChildren(children);
+        const normalizedChildren = normalizeChildren(children);
         return normalizedChildren?
             types.callExpression(
                 types.memberExpression(
                     prevExpr,
                     types.identifier('children')),
-                []) :
+                [normalizedChildren]) :
             prevExpr;
     }
 
