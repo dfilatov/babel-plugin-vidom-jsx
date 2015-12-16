@@ -9,11 +9,14 @@ export default function({ types }) {
     }
 
     function buildChildrenExpr(children, prevExpr) {
-        return types.callExpression(
-            types.memberExpression(
-                prevExpr,
-                types.identifier('children')),
-            [normalizeChildren(children)]);
+        var normalizedChildren = normalizeChildren(children);
+        return normalizedChildren?
+            types.callExpression(
+                types.memberExpression(
+                    prevExpr,
+                    types.identifier('children')),
+                []) :
+            prevExpr;
     }
 
     function buildAttrsExpr(attrs, prevExpr, file) {
