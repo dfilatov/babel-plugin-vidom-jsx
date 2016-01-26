@@ -1,15 +1,25 @@
 import syntaxJSXPlugin from 'babel-plugin-syntax-jsx';
 
-const NODE_BUILDER = '__vnode__',
+const VIDOM = 'vidom',
+    NODE_BUILDER = '__vnode__',
     CHILDREN_NORMALIZER = '__vnormalizer__';
 
 export default function({ types }) {
+    let autoRequire,
+        requireNode,
+        requireNormalizer;
+
     function buildNodeExpr(tagExpr) {
-        return types.callExpression(types.identifier(NODE_BUILDER), [tagExpr]);
+        return types.callExpression(
+            autoRequire?
+                types.identifier(NODE_BUILDER) :
+                types.memberExpression(types.identifier(VIDOM), types.identifier('node')),
+            [tagExpr]);
     }
 
     function buildChildrenExpr(children, prevExpr) {
         const normalizedChildren = normalizeChildren(children);
+
         return normalizedChildren?
             types.callExpression(
                 types.memberExpression(
@@ -167,7 +177,9 @@ export default function({ types }) {
 
         return normalizeInRuntime?
             types.callExpression(
-                types.identifier(CHILDREN_NORMALIZER),
+                autoRequire?
+                    types.identifier(CHILDREN_NORMALIZER) :
+                    types.memberExpression(types.identifier(VIDOM), types.identifier('normalizeChildren')),
                 [res.length > 1? types.arrayExpression(res) : res[0]]) :
             res.length > 1?
                 types.arrayExpression(res) :
@@ -215,12 +227,10 @@ export default function({ types }) {
         }
     }
 
-    let requireNode, requireNormalizer;
-
     return {
         inherits : syntaxJSXPlugin,
         visitor : {
-            JSXElement : function(path, file) {
+            JSXElement(path, file) {
                 requireNode = true;
 
                 const node = path.node,
@@ -244,33 +254,36 @@ export default function({ types }) {
             },
 
             Program : {
-                enter : function() {
+                enter(_, { opts }) {
+                    autoRequire = opts.autoRequire !== false;
                     requireNode = false;
                     requireNormalizer = false;
                 },
 
-                exit : function(path) {
+                exit(path) {
                     if(!requireNode) {
                         return;
                     }
 
-                    path.node.body.unshift(
-                        types.variableDeclaration(
-                            'var',
-                            [
-                                types.variableDeclarator(
-                                    types.identifier(NODE_BUILDER),
-                                    types.memberExpression(
-                                        types.callExpression(types.identifier('require'), [types.stringLiteral('vidom')]),
-                                        types.identifier('node')))
-                            ].concat(requireNormalizer?
-                                types.variableDeclarator(
-                                    types.identifier(CHILDREN_NORMALIZER),
-                                    types.memberExpression(
-                                        types.callExpression(types.identifier('require'), [types.stringLiteral('vidom')]),
-                                        types.identifier('normalizeChildren'))) :
-                                []
-                            )));
+                    if(autoRequire) {
+                        const requireExpr = types.callExpression(
+                            types.identifier('require'),
+                            [types.stringLiteral(VIDOM)]);
+
+                        path.node.body.unshift(
+                            types.variableDeclaration(
+                                'var',
+                                [
+                                    types.variableDeclarator(
+                                        types.identifier(NODE_BUILDER),
+                                        types.memberExpression(requireExpr, types.identifier('node')))
+                                ].concat(requireNormalizer?
+                                    types.variableDeclarator(
+                                        types.identifier(CHILDREN_NORMALIZER),
+                                        types.memberExpression(requireExpr, types.identifier('normalizeChildren'))) :
+                                    []
+                                )));
+                    }
                 }
             }
         }
