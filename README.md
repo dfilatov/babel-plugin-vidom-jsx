@@ -7,8 +7,17 @@ npm i --save-dev babel-plugin-vidom-jsx
 ```
 
 ## Usage
+
+### via CLI
 ```
 babel --plugins vidom-jsx file.js
+```
+
+### via babel.rc
+```js
+{
+  "plugins": ["vidom-jsx"]
+}
 ```
 
 ### Options
