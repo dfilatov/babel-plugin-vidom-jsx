@@ -152,7 +152,7 @@ export default function({ types }) {
                             acc.push(
                                 types.callExpression(
                                     types.memberExpression(
-                                        buildNodeExpr(types.stringLiteral('span')),
+                                        buildNodeExpr(types.stringLiteral('text')),
                                         types.identifier('children')),
                                         [child]));
                         }
