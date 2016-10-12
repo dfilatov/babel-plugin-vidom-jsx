@@ -142,29 +142,20 @@ export default function({ types }) {
     }
 
     function normalizeChildren(children) {
-        let normalizeInRuntime = false,
+        let hasTextNodes = false,
+            normalizeInRuntime = false,
             res = children.reduce((acc, child) => {
                 if(types.isJSXText(child)) {
                     child = cleanJSXText(child);
 
                     if(child) {
-                        if(children.length > 1) {
-                            acc.push(
-                                types.callExpression(
-                                    types.memberExpression(
-                                        buildNodeExpr(types.stringLiteral('text')),
-                                        types.identifier('children')),
-                                        [child]));
-                        }
-                        else {
-                            acc.push(child);
-                        }
+                        hasTextNodes = true;
+                        acc.push(child);
                     }
                 }
                 else if(types.isJSXExpressionContainer(child)) {
                     if(!types.isJSXEmptyExpression(child.expression)) {
                         normalizeInRuntime = true;
-                        requireNormalizer = true;
                         acc.push(child.expression);
                     }
                 }
@@ -175,15 +166,22 @@ export default function({ types }) {
                 return acc;
             }, []);
 
-        return normalizeInRuntime?
-            types.callExpression(
+        if(hasTextNodes && res.length > 1) {
+            normalizeInRuntime = true;
+        }
+
+        if(normalizeInRuntime) {
+            requireNormalizer = true;
+            return types.callExpression(
                 autoRequire?
                     types.identifier(CHILDREN_NORMALIZER) :
                     types.memberExpression(types.identifier(VIDOM), types.identifier('normalizeChildren')),
-                [res.length > 1? types.arrayExpression(res) : res[0]]) :
-            res.length > 1?
-                types.arrayExpression(res) :
-                res[0];
+                [res.length > 1? types.arrayExpression(res) : res[0]]);
+        }
+
+        return res.length > 1?
+            types.arrayExpression(res) :
+            res[0];
     }
 
     function cleanJSXText(node) {
