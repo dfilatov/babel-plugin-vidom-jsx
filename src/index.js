@@ -143,7 +143,7 @@ export default function({ types }) {
 
     function normalizeChildren(children) {
         let hasTextNodes = false,
-            normalizeInRuntime = false,
+            hasJSXExpressions = false,
             res = children.reduce((acc, child) => {
                 if(types.isJSXText(child)) {
                     child = cleanJSXText(child);
@@ -155,7 +155,7 @@ export default function({ types }) {
                 }
                 else if(types.isJSXExpressionContainer(child)) {
                     if(!types.isJSXEmptyExpression(child.expression)) {
-                        normalizeInRuntime = true;
+                        hasJSXExpressions = true;
                         acc.push(child.expression);
                     }
                 }
@@ -166,17 +166,22 @@ export default function({ types }) {
                 return acc;
             }, []);
 
-        if(hasTextNodes && res.length > 1) {
-            normalizeInRuntime = true;
-        }
-
-        if(normalizeInRuntime) {
+        if(hasJSXExpressions) {
             requireNormalizer = true;
             return types.callExpression(
                 autoRequire?
                     types.identifier(CHILDREN_NORMALIZER) :
                     types.memberExpression(types.identifier(VIDOM), types.identifier('normalizeChildren')),
                 [res.length > 1? types.arrayExpression(res) : res[0]]);
+        }
+        else if(hasTextNodes && res.length > 1) {
+            res = res.map(child => child.type === 'StringLiteral'?
+                types.callExpression(
+                    types.memberExpression(
+                        buildNodeExpr(types.stringLiteral('text')),
+                        types.identifier('children')),
+                        [child]) :
+                child);
         }
 
         return res.length > 1?
