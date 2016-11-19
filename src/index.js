@@ -1,8 +1,8 @@
 import syntaxJSXPlugin from 'babel-plugin-syntax-jsx';
 
-const VIDOM = 'vidom',
-    NODE_BUILDER = '__vnode__',
-    CHILDREN_NORMALIZER = '__vnormalizer__';
+const NAMESPACE = 'skeletonjs';
+const NODE_BUILDER = '__vnode__';
+const CHILDREN_NORMALIZER = '__vnormalizer__';
 
 export default function({ types }) {
     let autoRequire,
@@ -13,7 +13,7 @@ export default function({ types }) {
         return types.callExpression(
             autoRequire?
                 types.identifier(NODE_BUILDER) :
-                types.memberExpression(types.identifier(VIDOM), types.identifier('node')),
+                types.memberExpression(types.identifier(NAMESPACE), types.identifier('node')),
             [tagExpr]);
     }
 
@@ -171,7 +171,7 @@ export default function({ types }) {
             return types.callExpression(
                 autoRequire?
                     types.identifier(CHILDREN_NORMALIZER) :
-                    types.memberExpression(types.identifier(VIDOM), types.identifier('normalizeChildren')),
+                    types.memberExpression(types.identifier(NAMESPACE), types.identifier('normalizeChildren')),
                 [res.length > 1? types.arrayExpression(res) : res[0]]);
         }
         else if(hasTextNodes && res.length > 1) {
@@ -258,7 +258,7 @@ export default function({ types }) {
 
             Program : {
                 enter(_, { opts }) {
-                    autoRequire = opts.autoRequire !== false;
+                    autoRequire = opts.autoRequire;
                     requireNode = false;
                     requireNormalizer = false;
                 },
@@ -271,7 +271,7 @@ export default function({ types }) {
                     if(autoRequire) {
                         const requireExpr = types.callExpression(
                             types.identifier('require'),
-                            [types.stringLiteral(VIDOM)]);
+                            [types.stringLiteral(NAMESPACE)]);
 
                         path.node.body.unshift(
                             types.variableDeclaration(
