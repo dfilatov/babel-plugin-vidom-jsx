@@ -20,6 +20,6 @@ babel --plugins vidom-jsx file.js
 }
 ```
 
-### Options
-  * `autoRequire=true` By default plugin automatically adds necessary `require` but you can disable this behaviour and plugin will use `vidom` reference inside current scope.
+## Options
 
+  * `autoRequire` automatically adds necessary `require` (false by default)
