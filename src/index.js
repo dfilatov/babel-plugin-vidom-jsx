@@ -37,7 +37,7 @@ export default function({ types }) {
             nsExpr,
             keyExpr,
             htmlExpr,
-            domRefExpr,
+            refExpr,
             pushAttrs = () => {
                 if(!attrList.length) {
                     return;
@@ -66,8 +66,8 @@ export default function({ types }) {
                         htmlExpr = getValueExpr(attr.value);
                     break;
 
-                    case 'dom-ref':
-                        domRefExpr = getValueExpr(attr.value);
+                    case 'ref':
+                        refExpr = getValueExpr(attr.value);
                     break;
 
                     default:
@@ -96,27 +96,15 @@ export default function({ types }) {
             }
         }
 
-        if(domRefExpr) {
-            res = types.callExpression(
-                types.memberExpression(
-                    types.identifier('this'),
-                    types.identifier('setDomRef')),
-                [domRefExpr, res]);
-        }
-
         if(nsExpr) {
             res = types.callExpression(
-                types.memberExpression(
-                    res,
-                    types.identifier('ns')),
+                types.memberExpression(res, types.identifier('ns')),
                 [nsExpr]);
         }
 
         if(keyExpr) {
             res = types.callExpression(
-                types.memberExpression(
-                    res,
-                    types.identifier('key')),
+                types.memberExpression(res, types.identifier('key')),
                 [keyExpr]);
         }
 
@@ -126,11 +114,15 @@ export default function({ types }) {
                 [attrsExpr]);
         }
 
+        if(refExpr) {
+            res = types.callExpression(
+                types.memberExpression(res, types.identifier('ref')),
+                [refExpr]);
+        }
+
         if(htmlExpr) {
             res = types.callExpression(
-                types.memberExpression(
-                    res,
-                    types.identifier('html')),
+                types.memberExpression(res, types.identifier('html')),
                 [htmlExpr]);
         }
 
@@ -174,7 +166,8 @@ export default function({ types }) {
                     types.memberExpression(types.identifier(VIDOM), types.identifier('normalizeChildren')),
                 [res.length > 1? types.arrayExpression(res) : res[0]]);
         }
-        else if(hasTextNodes && res.length > 1) {
+
+        if(hasTextNodes && res.length > 1) {
             res = res.map(child => child.type === 'StringLiteral'?
                 types.callExpression(
                     types.memberExpression(
