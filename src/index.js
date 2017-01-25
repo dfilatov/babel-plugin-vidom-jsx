@@ -262,23 +262,18 @@ export default function({ types }) {
                     }
 
                     if(autoRequire) {
-                        const requireExpr = types.callExpression(
-                            types.identifier('require'),
-                            [types.stringLiteral(VIDOM)]);
+                        const importDeclaration = types.importDeclaration(
+                            [
+                                types.importSpecifier(
+                                    types.identifier(NODE_BUILDER),
+                                    types.identifier('node'))
+                            ].concat(requireNormalizer? [
+                                types.importSpecifier(
+                                    types.identifier(CHILDREN_NORMALIZER),
+                                    types.identifier('normalizeChildren'))
+                            ] : []), types.stringLiteral('vidom'));
 
-                        path.node.body.unshift(
-                            types.variableDeclaration(
-                                'var',
-                                [
-                                    types.variableDeclarator(
-                                        types.identifier(NODE_BUILDER),
-                                        types.memberExpression(requireExpr, types.identifier('node')))
-                                ].concat(requireNormalizer?
-                                    types.variableDeclarator(
-                                        types.identifier(CHILDREN_NORMALIZER),
-                                        types.memberExpression(requireExpr, types.identifier('normalizeChildren'))) :
-                                    []
-                                )));
+                        path.unshiftContainer('body', importDeclaration);
                     }
                 }
             }
