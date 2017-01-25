@@ -271,7 +271,7 @@ export default function({ types }) {
                                 types.importSpecifier(
                                     types.identifier(CHILDREN_NORMALIZER),
                                     types.identifier('normalizeChildren'))
-                            ] : []), types.stringLiteral('vidom'));
+                            ] : []), types.stringLiteral(VIDOM));
 
                         path.unshiftContainer('body', importDeclaration);
                     }
