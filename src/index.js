@@ -24,7 +24,7 @@ export default function({ types }) {
             types.callExpression(
                 types.memberExpression(
                     prevExpr,
-                    types.identifier('children')),
+                    types.identifier('setChildren')),
                 [normalizedChildren]) :
             prevExpr;
     }
@@ -98,31 +98,31 @@ export default function({ types }) {
 
         if(nsExpr) {
             res = types.callExpression(
-                types.memberExpression(res, types.identifier('ns')),
+                types.memberExpression(res, types.identifier('setNs')),
                 [nsExpr]);
         }
 
         if(keyExpr) {
             res = types.callExpression(
-                types.memberExpression(res, types.identifier('key')),
+                types.memberExpression(res, types.identifier('setKey')),
                 [keyExpr]);
         }
 
         if(attrsExpr) {
             res = types.callExpression(
-                types.memberExpression(res, types.identifier('attrs')),
+                types.memberExpression(res, types.identifier('setAttrs')),
                 [attrsExpr]);
         }
 
         if(refExpr) {
             res = types.callExpression(
-                types.memberExpression(res, types.identifier('ref')),
+                types.memberExpression(res, types.identifier('setRef')),
                 [refExpr]);
         }
 
         if(htmlExpr) {
             res = types.callExpression(
-                types.memberExpression(res, types.identifier('html')),
+                types.memberExpression(res, types.identifier('setHtml')),
                 [htmlExpr]);
         }
 
@@ -172,7 +172,7 @@ export default function({ types }) {
                 types.callExpression(
                     types.memberExpression(
                         buildNodeExpr(types.stringLiteral('text')),
-                        types.identifier('children')),
+                        types.identifier('setChildren')),
                         [child]) :
                 child);
         }
