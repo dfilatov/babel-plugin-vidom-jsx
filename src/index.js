@@ -171,7 +171,7 @@ export default function({ types }) {
             res = res.map(child => child.type === 'StringLiteral'?
                 types.callExpression(
                     types.memberExpression(
-                        buildNodeExpr(types.stringLiteral('text')),
+                        buildNodeExpr(types.stringLiteral('plaintext')),
                         types.identifier('setChildren')),
                         [child]) :
                 child);
