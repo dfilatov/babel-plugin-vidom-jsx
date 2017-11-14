@@ -1,4 +1,6 @@
 # babel-plugin-vidom-jsx
+[![NPM Version](https://img.shields.io/npm/v/babel-plugin-vidom-jsx.svg?style=flat-square)](https://www.npmjs.com/package/babel-plugin-vidom-jsx)
+
 Plugin for babel to enable JSX in [Vidom](https://github.com/dfilatov/vidom).
 
 ## Installation
