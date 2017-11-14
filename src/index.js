@@ -223,23 +223,42 @@ export default function({ types }) {
         }
     }
 
+    function buildJSXIdentifierExpression(node, parent) {
+        if(types.isJSXIdentifier(node)) {
+            if(node.name === 'this' && types.isReferenced(node, parent)) {
+                return types.thisExpression();
+            }
+
+            if(node.name === node.name.toLowerCase()) {
+                return types.stringLiteral(node.name);
+            }
+
+            node.type = 'Identifier';
+            return node;
+        }
+
+        if(types.isJSXMemberExpression(node)) {
+            return types.memberExpression(
+                buildJSXIdentifierExpression(node.object, node),
+                buildJSXIdentifierExpression(node.property, node));
+        }
+
+        return node;
+    }
+
     return {
         inherits : syntaxJSXPlugin,
         visitor : {
             JSXElement(path, file) {
                 requireNode = true;
 
-                const node = path.node,
-                    name = node.openingElement.name.name,
-                    attrs = node.openingElement.attributes,
-                    children = node.children;
+                const { node : { openingElement, children } } = path,
+                    { name, attributes } = openingElement;
 
-                let res = buildNodeExpr(name === name.toLowerCase()?
-                        types.stringLiteral(name) :
-                        node.openingElement.name);
+                let res = buildNodeExpr(buildJSXIdentifierExpression(name, path.node));
 
-                if(attrs.length) {
-                    res = buildAttrsExpr(attrs, res, file);
+                if(attributes.length) {
+                    res = buildAttrsExpr(attributes, res, file);
                 }
 
                 if(children.length) {
