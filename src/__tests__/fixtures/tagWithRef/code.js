@@ -1,0 +1,1 @@
+<div ref={ function ref() {} }/>

@@ -1,7 +1,7 @@
 import syntaxJSXPlugin from 'babel-plugin-syntax-jsx';
 
 const VIDOM = 'vidom',
-    ELEM_BUILDER = '__velem__';
+    ELEM_BUILDER = '_ve_';
 
 export default function({ types }) {
     let autoRequire,

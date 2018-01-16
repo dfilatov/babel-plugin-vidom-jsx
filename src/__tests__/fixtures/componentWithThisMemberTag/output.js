@@ -1,2 +1,2 @@
 import { elem as _ve_ } from "vidom";
-_ve_("div");
+_ve_(this.Component);

@@ -1,1 +1,1 @@
-<input type="text" { ...{ value : "val", placeholder : "place" } }/>
+<input { ...{ type : "text", value : "val" } }/>
