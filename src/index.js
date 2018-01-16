@@ -1,38 +1,24 @@
 import syntaxJSXPlugin from 'babel-plugin-syntax-jsx';
 
 const VIDOM = 'vidom',
-    NODE_BUILDER = '__vnode__',
-    CHILDREN_NORMALIZER = '__vnormalizer__';
+    ELEM_BUILDER = '__velem__';
 
 export default function({ types }) {
     let autoRequire,
-        requireNode,
-        requireNormalizer;
+        requireElem;
 
-    function buildNodeExpr(tagExpr) {
+    function buildElemExpr(tagExpr, argsExpr) {
         return types.callExpression(
             autoRequire?
-                types.identifier(NODE_BUILDER) :
-                types.memberExpression(types.identifier(VIDOM), types.identifier('node')),
-            [tagExpr]);
+                types.identifier(ELEM_BUILDER) :
+                types.memberExpression(types.identifier(VIDOM), types.identifier('elem')),
+            [tagExpr].concat(argsExpr));
     }
 
-    function buildChildrenExpr(children, prevExpr) {
-        const normalizedChildren = normalizeChildren(children);
-
-        return normalizedChildren?
-            types.callExpression(
-                types.memberExpression(
-                    prevExpr,
-                    types.identifier('setChildren')),
-                [normalizedChildren]) :
-            prevExpr;
-    }
-
-    function buildAttrsExpr(attrs, prevExpr, file) {
-        let res = prevExpr,
-            attrList = [],
-            objList = [],
+    function buildElemArgsExpr(attrs, children, file) {
+        const res = [],
+            objList = [];
+        let attrList = [],
             attrsExpr,
             nsExpr,
             keyExpr,
@@ -54,10 +40,6 @@ export default function({ types }) {
             }
             else {
                 switch(attr.name.name) {
-                    case 'xmlns':
-                        nsExpr = getValueExpr(attr.value);
-                    break;
-
                     case 'key':
                         keyExpr = getValueExpr(attr.value);
                     break;
@@ -83,7 +65,7 @@ export default function({ types }) {
 
         pushAttrs();
 
-        if(objList.length) {
+        if(objList.length > 0) {
             if(objList.length === 1) {
                 attrsExpr = objList[0];
             }
@@ -96,37 +78,24 @@ export default function({ types }) {
             }
         }
 
-        if(nsExpr) {
-            res = types.callExpression(
-                types.memberExpression(res, types.identifier('setNs')),
-                [nsExpr]);
+        res.push(
+            keyExpr || null,
+            attrsExpr || null,
+            htmlExpr? htmlExpr : normalizeChildren(children),
+            refExpr || null,
+            htmlExpr? types.booleanLiteral(false) : null);
+
+        let notNullLen = res.length;
+
+        while(notNullLen > 0) {
+            if(res[notNullLen - 1] !== null) {
+                break;
+            }
+            notNullLen--;
         }
 
-        if(keyExpr) {
-            res = types.callExpression(
-                types.memberExpression(res, types.identifier('setKey')),
-                [keyExpr]);
-        }
-
-        if(attrsExpr) {
-            res = types.callExpression(
-                types.memberExpression(res, types.identifier('setAttrs')),
-                [attrsExpr]);
-        }
-
-        if(refExpr) {
-            res = types.callExpression(
-                types.memberExpression(res, types.identifier('setRef')),
-                [refExpr]);
-        }
-
-        if(htmlExpr) {
-            res = types.callExpression(
-                types.memberExpression(res, types.identifier('setHtml')),
-                [htmlExpr]);
-        }
-
-        return res;
+        return (notNullLen < res.length? res.slice(0, notNullLen) : res)
+            .map(expr => expr === null? types.nullLiteral() : expr);
     }
 
     function getValueExpr(value) {
@@ -134,52 +103,31 @@ export default function({ types }) {
     }
 
     function normalizeChildren(children) {
-        let hasTextNodes = false,
-            hasJSXExpressions = false,
-            res = children.reduce((acc, child) => {
-                if(types.isJSXText(child)) {
-                    child = cleanJSXText(child);
+        const res = children.reduce((acc, child) => {
+            if(types.isJSXText(child)) {
+                child = cleanJSXText(child);
 
-                    if(child) {
-                        hasTextNodes = true;
-                        acc.push(child);
-                    }
-                }
-                else if(types.isJSXExpressionContainer(child)) {
-                    if(!types.isJSXEmptyExpression(child.expression)) {
-                        hasJSXExpressions = true;
-                        acc.push(child.expression);
-                    }
-                }
-                else {
+                if(child) {
                     acc.push(child);
                 }
+            }
+            else if(types.isJSXExpressionContainer(child)) {
+                if(!types.isJSXEmptyExpression(child.expression)) {
+                    acc.push(child.expression);
+                }
+            }
+            else {
+                acc.push(child);
+            }
 
-                return acc;
-            }, []);
+            return acc;
+        }, []);
 
-        if(hasJSXExpressions) {
-            requireNormalizer = true;
-            return types.callExpression(
-                autoRequire?
-                    types.identifier(CHILDREN_NORMALIZER) :
-                    types.memberExpression(types.identifier(VIDOM), types.identifier('normalizeChildren')),
-                [res.length > 1? types.arrayExpression(res) : res[0]]);
-        }
-
-        if(hasTextNodes && res.length > 1) {
-            res = res.map(child => child.type === 'StringLiteral'?
-                types.callExpression(
-                    types.memberExpression(
-                        buildNodeExpr(types.stringLiteral('plaintext')),
-                        types.identifier('setChildren')),
-                        [child]) :
-                child);
-        }
-
-        return res.length > 1?
-            types.arrayExpression(res) :
-            res[0];
+        return res.length > 0?
+            res.length > 1?
+                types.arrayExpression(res) :
+                res[0] :
+            null;
     }
 
     function cleanJSXText(node) {
@@ -223,7 +171,7 @@ export default function({ types }) {
         }
     }
 
-    function buildJSXIdentifierExpression(node, parent) {
+    function buildJSXIdentifierExpr(node, parent) {
         if(types.isJSXIdentifier(node)) {
             if(node.name === 'this' && types.isReferenced(node, parent)) {
                 return types.thisExpression();
@@ -239,8 +187,8 @@ export default function({ types }) {
 
         if(types.isJSXMemberExpression(node)) {
             return types.memberExpression(
-                buildJSXIdentifierExpression(node.object, node),
-                buildJSXIdentifierExpression(node.property, node));
+                buildJSXIdentifierExpr(node.object, node),
+                buildJSXIdentifierExpr(node.property, node));
         }
 
         return node;
@@ -250,33 +198,29 @@ export default function({ types }) {
         inherits : syntaxJSXPlugin,
         visitor : {
             JSXElement(path, file) {
-                requireNode = true;
+                requireElem = true;
 
-                const { node : { openingElement, children } } = path,
-                    { name, attributes } = openingElement;
+                const {
+                    node : {
+                        openingElement : { name, attributes },
+                        children
+                    }
+                } = path;
 
-                let res = buildNodeExpr(buildJSXIdentifierExpression(name, path.node));
-
-                if(attributes.length) {
-                    res = buildAttrsExpr(attributes, res, file);
-                }
-
-                if(children.length) {
-                    res = buildChildrenExpr(children, res);
-                }
-
-                path.replaceWith(res);
+                path.replaceWith(
+                    buildElemExpr(
+                        buildJSXIdentifierExpr(name, path.node),
+                        buildElemArgsExpr(attributes, children, file)));
             },
 
             Program : {
                 enter(_, { opts }) {
                     autoRequire = opts.autoRequire !== false;
-                    requireNode = false;
-                    requireNormalizer = false;
+                    requireElem = false;
                 },
 
                 exit(path) {
-                    if(!requireNode) {
+                    if(!requireElem) {
                         return;
                     }
 
@@ -284,13 +228,10 @@ export default function({ types }) {
                         const importDeclaration = types.importDeclaration(
                             [
                                 types.importSpecifier(
-                                    types.identifier(NODE_BUILDER),
-                                    types.identifier('node'))
-                            ].concat(requireNormalizer? [
-                                types.importSpecifier(
-                                    types.identifier(CHILDREN_NORMALIZER),
-                                    types.identifier('normalizeChildren'))
-                            ] : []), types.stringLiteral(VIDOM));
+                                    types.identifier(ELEM_BUILDER),
+                                    types.identifier('elem'))
+                            ],
+                            types.stringLiteral(VIDOM));
 
                         path.unshiftContainer('body', importDeclaration);
                     }
