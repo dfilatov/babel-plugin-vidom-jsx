@@ -19,10 +19,13 @@
   },
   "devDependencies": {
     "babel-cli": "6.26.0",
-    "babel-preset-env": "1.6.1"
+    "babel-plugin-tester": "^5.0.0",
+    "babel-preset-env": "1.6.1",
+    "kcd-scripts": "0.32.1"
   },
   "license": "MIT",
   "scripts": {
+    "test": "kcd-scripts test",
     "build-lib": "rm -rf lib && mkdir -p lib && babel src --out-dir lib"
   }
 }
