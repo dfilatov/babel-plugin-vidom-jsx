@@ -1,4 +1,5 @@
 # babel-plugin-vidom-jsx
+[![Build Status](https://img.shields.io/travis/dfilatov/babel-plugin-vidom-jsx/master.svg?style=flat-square)](https://travis-ci.org/dfilatov/babel-plugin-vidom-jsx/branches)
 [![NPM Version](https://img.shields.io/npm/v/babel-plugin-vidom-jsx.svg?style=flat-square)](https://www.npmjs.com/package/babel-plugin-vidom-jsx)
 
 Plugin for babel to enable JSX in [Vidom](https://github.com/dfilatov/vidom).
