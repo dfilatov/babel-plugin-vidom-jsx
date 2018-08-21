@@ -20,7 +20,6 @@ export default function({ types }) {
             objList = [];
         let attrList = [],
             attrsExpr,
-            nsExpr,
             keyExpr,
             htmlExpr,
             refExpr,

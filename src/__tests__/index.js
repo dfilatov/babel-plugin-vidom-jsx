@@ -6,4 +6,4 @@ pluginTester({
     plugin : vidomJsxPlugin,
     pluginName : 'vidom-jsx',
     fixtures : path.join(__dirname, 'fixtures')
-})
+});
