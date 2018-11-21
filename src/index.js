@@ -1,4 +1,4 @@
-import syntaxJSXPlugin from 'babel-plugin-syntax-jsx';
+import syntaxJSXPlugin from '@babel/plugin-syntax-jsx';
 
 const VIDOM = 'vidom',
     ELEM_BUILDER = '_ve_';
