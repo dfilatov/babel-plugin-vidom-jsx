@@ -1,1 +1,1 @@
-<Component.Subcomponent/>
+<Component/>

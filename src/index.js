@@ -193,6 +193,10 @@ export default function({ types }) {
         return node;
     }
 
+    function buildJSXFragmentExpr() {
+        return types.stringLiteral('fragment');
+    }
+
     return {
         inherits : syntaxJSXPlugin,
         visitor : {
@@ -210,6 +214,15 @@ export default function({ types }) {
                     buildElemExpr(
                         buildJSXIdentifierExpr(name, path.node),
                         buildElemArgsExpr(attributes, children, file)));
+            },
+
+            JSXFragment(path, file) {
+                requireElem = true;
+
+                path.replaceWith(
+                    buildElemExpr(
+                        buildJSXFragmentExpr(),
+                        buildElemArgsExpr([], path.node.children, file)));
             },
 
             Program : {

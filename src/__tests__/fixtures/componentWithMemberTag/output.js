@@ -1,3 +1,3 @@
 import { elem as _ve_ } from "vidom";
 
-_ve_(Component);
+_ve_(Component.Subcomponent);
