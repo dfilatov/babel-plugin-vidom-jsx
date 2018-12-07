@@ -14,14 +14,14 @@
     "url": "git://github.com/dfilatov/babel-plugin-vidom-jsx.git"
   },
   "dependencies": {
-    "@babel/plugin-syntax-jsx": "7.0.0",
-    "@babel/runtime": "7.1.5"
+    "@babel/plugin-syntax-jsx": "7.2.0",
+    "@babel/runtime": "7.2.0"
   },
   "devDependencies": {
-    "@babel/cli": "7.1.5",
-    "@babel/preset-env": "7.1.6",
+    "@babel/cli": "7.2.0",
+    "@babel/preset-env": "7.2.0",
     "babel-plugin-tester": "5.5.2",
-    "kcd-scripts": "0.45.0"
+    "kcd-scripts": "0.46.0"
   },
   "license": "MIT",
   "scripts": {
