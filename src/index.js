@@ -176,7 +176,7 @@ export default function({ types }) {
                 return types.thisExpression();
             }
 
-            if(node.name === node.name.toLowerCase()) {
+            if(node.name === node.name.toLowerCase() && !types.isJSXMemberExpression(parent)) {
                 return types.stringLiteral(node.name);
             }
 
@@ -204,11 +204,9 @@ export default function({ types }) {
                 requireElem = true;
 
                 const {
-                    node : {
-                        openingElement : { name, attributes },
-                        children
-                    }
-                } = path;
+                    openingElement : { name, attributes },
+                    children
+                } = path.node;
 
                 path.replaceWith(
                     buildElemExpr(
